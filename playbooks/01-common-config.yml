@@ -1,0 +1,48 @@
+---
+- name: Linux Sunucular için Ortak Konfigürasyon
+  hosts: linux_servers
+  become: yes
+  
+  tasks:
+    - name: Sistem timezone ayarla
+      timezone:
+        name: Europe/Istanbul
+    
+    - name: Temel paketleri kur
+      apt:
+        name:
+          - vim
+          - htop
+          - curl
+          - wget
+          - git
+          - net-tools
+          - software-properties-common
+          - python3-pip
+          - unzip
+        state: present
+        update_cache: yes
+    
+    - name: Güvenlik - SSH ayarları
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+      notify: restart sshd
+    
+    - name: Sistem limits ayarları
+      lineinfile:
+        path: /etc/security/limits.conf
+        line: "{{ item }}"
+      loop:
+        - "* soft nofile 65535"
+        - "* hard nofile 65535"
+    
+  handlers:
+    - name: restart sshd
+      service:
+        name: sshd
+        state: restarted

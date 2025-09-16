@@ -1,0 +1,28 @@
+---
+- name: Linux Sunucuları Güncelle
+  hosts: linux_servers
+  become: yes
+  serial: 1
+  
+  tasks:
+    - name: APT cache güncelle
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+    
+    - name: Tüm paketleri güncelle
+      apt:
+        upgrade: dist
+        autoclean: yes
+        autoremove: yes
+      register: apt_upgrade_result
+    
+    - name: Yeniden başlatma gerekli mi kontrol et
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+    
+    - name: Yeniden başlatma gerekiyorsa bilgi ver
+      debug:
+        msg: "UYARI: {{ ansible_hostname }} yeniden başlatılmalı!"
+      when: reboot_required.stat.exists
